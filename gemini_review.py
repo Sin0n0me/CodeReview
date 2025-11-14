@@ -3,6 +3,7 @@ import os
 import sys
 import json
 import datetime
+import time
 from pathlib import Path
 from google import genai
 
@@ -49,7 +50,7 @@ def load_config(path="review_config.json"):
         sys.exit(1)
 
 
-def call_gemini_api(model: str, prompt: str):
+def call_gemini_api(model: str, prompt: str) -> str:
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
     if GEMINI_API_KEY is None:
         print(
@@ -58,8 +59,36 @@ def call_gemini_api(model: str, prompt: str):
         )
         sys.exit(1)
 
-    client = genai.Client()
+    retry_time = [3, 30, 120, 300, 600]
+    i = 0
+    while True:
+        try:
+            return try_call_gemini_api(model, prompt)
+        except genai.errors.APIError as e:
+            i += 1
 
+            if not hasattr(e, "code"):
+                break
+
+            if i > len(retry_time) - 1:
+                break
+
+            if e.code == 429:
+                print("レート制限に達しています")
+                break
+
+            if e.code == 503:
+                print(
+                    "過負荷によりリクエストが拒否されました\n"
+                    f"リトライします 待機時間: {retry_time[i]}s"
+                )
+                time.sleep(retry_time[i])
+
+    return None
+
+
+def try_call_gemini_api(model: str, prompt: str):
+    client = genai.Client()
     response = client.models.generate_content(
         model=model,
         contents=prompt,
@@ -105,6 +134,14 @@ def main():
         print("差分が空です")
         return
 
+    print("Geminiにレビューを依頼しています...(数分かかる場合があります)")
+
+    review_result = call_gemini_api(model, f"{prompt}\n```{diff_text}```")
+    if review_result is None:
+        print("レビューに失敗しました")
+        return
+
+    # 結果を保存
     # 出力ディレクトリの作成
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     output_dir = Path(f"./review/{timestamp}")
@@ -134,11 +171,7 @@ def main():
     meta_path.write_text(meta_info, encoding="utf-8")
     print(f"比較情報を {meta_path} に保存しました")
 
-    print("Geminiにレビューを依頼しています...(数分かかる場合があります)")
-
-    review_result = call_gemini_api(model, f"{prompt}\n```{diff_text}```")
-
-    # 結果を保存
+    # レビュー結果を保存
     review_path.write_text(review_result, encoding="utf-8")
     print(f"レビュー結果を {review_path} に保存しました")
 
