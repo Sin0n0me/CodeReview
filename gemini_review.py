@@ -65,8 +65,6 @@ def call_gemini_api(model: str, prompt: str) -> str:
         try:
             return try_call_gemini_api(model, prompt)
         except genai.errors.APIError as e:
-            i += 1
-
             if not hasattr(e, "code"):
                 break
 
@@ -83,6 +81,8 @@ def call_gemini_api(model: str, prompt: str) -> str:
                     f"リトライします 待機時間: {retry_time[i]}s"
                 )
                 time.sleep(retry_time[i])
+
+            i += 1
 
     return None
 
