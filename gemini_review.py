@@ -38,7 +38,7 @@ def run_cmd(cmd, cwd=None) -> str:
 
 
 def get_current_branch(cwd) -> str:
-    return run_cmd(["git", "branch", "--contains"], cwd=cwd)
+    return run_cmd(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=cwd)
 
 
 def get_latest_commit(branch: str, cwd) -> str:
@@ -46,27 +46,12 @@ def get_latest_commit(branch: str, cwd) -> str:
 
 
 def get_diff(from_commit: str, to_commit: str, targets: str, cwd) -> str:
-    if targets == "":
-        return run_cmd(
-            [
-                "git",
-                "diff",
-                "--minimal",
-                f"{from_commit}..{to_commit}",
-            ],
-            cwd=cwd,
-        )
-    else:
-        return run_cmd(
-            [
-                "git",
-                "diff",
-                "--minimal",
-                f"{from_commit}..{to_commit}",
-                targets,
-            ],
-            cwd=cwd,
-        )
+    cmd = ["git", "diff", "--minimal", f"{from_commit}..{to_commit}"]
+    if targets:
+        # targetsが空でなければ追加
+        cmd.append("--")
+        cmd.extend(targets.split())
+    return run_cmd(cmd, cwd=cwd)
 
 
 def load_config(path="review_config.json"):
@@ -85,13 +70,16 @@ def load_config(path="review_config.json"):
 
 
 def call_gemini_api(model: str, prompt: str) -> str:
-    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-    if GEMINI_API_KEY is None:
+    api_key = os.getenv("GEMINI_API_KEY")
+    if api_key is None:
         print(
-            "ERROR: 環境変数 GEMINI_API_KEY が設定されていません",
+            (
+                "ERROR: 環境変数 'GEMINI_API_KEY' が設定されていません。",
+                "AI StudioでAPIキーを取得し、環境変数に設定してください。",
+            ),
             file=sys.stderr,
         )
-        sys.exit(1)
+        return None
 
     retry_time = [3, 30, 120, 300, 600]
     i = 0
@@ -150,7 +138,7 @@ def make_meta_data() -> dict[str, str]:
         )
         return None
 
-    current_branch = get_current_branch(project_dir)[2:]
+    current_branch = get_current_branch(project_dir)
     base_commit = get_latest_commit(base_branch, project_dir)
     head_commit = get_latest_commit(current_branch, project_dir)
 
