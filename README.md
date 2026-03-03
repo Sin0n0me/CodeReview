@@ -4,7 +4,7 @@
 
 ## 使い方
 
-1. `GEMINI_API_KEY`という環境変数を作成しGeminiAPIを叩くための[APIキー]((https://ai.google.dev/gemini-api/docs/api-key))を渡しておく
+1. `GEMINI_API_KEY`という環境変数を作成しGeminiAPIを叩くための[APIキー](https://ai.google.dev/gemini-api/docs/api-key)を渡しておく
 2. `review_config.json`にレビュー対象のパスや任意のプロンプトを書き込む
 3. `gemini_review.py`を実行
 4. 実行に成功すると`review`配下に`gemini_review.py`実行時の日付(`YYYYMMDD_HHmmss`形式)名のディレクトリといくつかのファイルが生成される
