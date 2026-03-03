@@ -1,12 +1,10 @@
 {
-  "project_path": "../Naughtiness",
+  "project_path": ".",
+  "targets": [],
   "base_branch": "origin/master",
   "model": "gemini-2.5-pro",
   "prompt": [
     "以下はGitによる差分です. コードレビューを行ってください.",
-    "## 情報",
-    "* 自作言語のプロジェクト",
-    "* 使用言語はRust",
     "## レビュー条件",
     "* レビュー結果はMarkdown記法",
     "* 必要に応じて公式ドキュメントなどを参照し正確な情報を参照し引用元のリンクを必ず記載",
